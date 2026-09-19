@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recomendador de streaming — SAW / TOPSIS</title>
+<style>
+  :root{
+    --bg: #10151b;
+    --panel: #f5f3ee;
+    --ink: #10151b;
+    --ink-soft: #55605c;
+    --accent: #2f7a5f;
+    --accent2: #7a4f2f;
+    --accent-soft: #d9ece2;
+    --line: #dcd7cb;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 32px 16px 64px;
+  }
+  .wrap{ max-width: 980px; margin: 0 auto; }
+
+  header.app-title{ text-align:center; margin-bottom: 28px; }
+  header.app-title h1{ color:#f5f3ee; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.2px; margin: 0 0 4px; }
+  header.app-title p{ color: #9aa79f; margin:0; font-size: 0.92rem; }
+
+  section.panel{
+    background: var(--panel);
+    border-radius: var(--radius);
+    padding: 24px 24px 28px;
+    margin-bottom: 20px;
+    border: 1px solid #00000010;
+  }
+  section.panel h2{ font-size: 1.05rem; margin: 0 0 4px; }
+  section.panel .sub{ color: var(--ink-soft); font-size: 0.85rem; margin: 0 0 18px; }
+
+  .method-row{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .method-option{
+    flex: 1;
+    min-width: 140px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: white;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .method-option input{ display:none; }
+  .method-option.active{
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .weights-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+  .weight-field{
+    display:flex; align-items:center; justify-content: space-between; gap: 10px;
+    border-bottom: 1px solid var(--line); padding-bottom: 8px;
+  }
+  .weight-field label{ font-size: 0.88rem; color: var(--ink); }
+  .weight-field input{
+    width: 66px; text-align:right; padding: 6px 8px;
+    border: 1px solid var(--line); border-radius: 6px; font-size: 0.9rem; background: white;
+  }
+
+  .run-row{
+    display:flex; align-items:center; justify-content: space-between;
+    margin-top: 22px; flex-wrap: wrap; gap: 12px;
+  }
+  .invert-toggle{ display:flex; align-items:center; gap: 8px; font-size: 0.85rem; color: var(--ink-soft); }
+  .run-btn{
+    display:flex; align-items:center; gap: 8px;
+    background: var(--accent); color: white; border: none; border-radius: 999px;
+    padding: 11px 22px; font-size: 0.92rem; font-weight: 600; cursor: pointer;
+  }
+  .run-btn:hover{ background:#265f4c; }
+  .run-btn svg{ width:12px; height:12px; }
+  .hint{ font-size: 0.78rem; color: var(--ink-soft); margin-top: 10px; }
+
+  table{ width:100%; border-collapse: collapse; font-size: 0.83rem; }
+  thead th{
+    text-align:left; color: var(--ink-soft); font-weight: 600; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.04em; padding: 0 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  tbody td{ padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  th.num, td.num{ text-align:center; }
+  th.group-saw{ color: var(--accent); }
+  th.group-topsis{ color: var(--accent2); }
+
+  .pos-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--line); color: var(--ink); font-weight: 700; font-size: 0.75rem;
+  }
+  tr.top1 .pos-badge{ background: var(--accent); color:white; }
+
+  .product-cell{ display:flex; align-items:center; gap: 10px; }
+  .logo{
+    width: 32px; height: 32px; border-radius: 8px;
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-weight:700; font-size: 0.75rem; flex-shrink:0;
+  }
+  .product-name{ font-weight: 600; }
+
+  .score{ font-weight: 700; color: var(--accent); }
+  .score.topsis{ color: var(--accent2); }
+  .score.dim{ color: var(--ink-soft); font-weight: 500; }
+
+  @media (max-width: 680px){
+    .weights-grid{ grid-template-columns: 1fr; }
+    table, thead, tbody, tr, td, th{ display:block; }
+    thead{ display:none; }
+    tbody tr{ border-bottom: 1px solid var(--line); padding: 12px 0; }
+    tbody td{ border-bottom:none; padding: 4px 0; display:flex; justify-content:space-between; gap: 12px; }
+    tbody td::before{ content: attr(data-label); color: var(--ink-soft); font-size:0.72rem; text-transform:uppercase; }
+    .product-cell{ justify-content:flex-end; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app-title">
+    <h1>Recomendador de streaming de música</h1>
+    <p>Sistema de apoyo a la decisión — métodos SAW y TOPSIS</p>
+  </header>
+
+  <section class="panel">
+    <h2>Método de decisión</h2>
+    <p class="sub">Elige con qué método calcular la recomendación.</p>
+    <div class="method-row" id="methodRow">
+      <label class="method-option active" data-value="saw">
+        <input type="radio" name="method" value="saw" checked> SAW
+      </label>
+      <label class="method-option" data-value="topsis">
+        <input type="radio" name="method" value="topsis"> TOPSIS
+      </label>
+      <label class="method-option" data-value="both">
+        <input type="radio" name="method" value="both"> Ambos (comparar)
+      </label>
+    </div>
+
+    <h2>Ponderación de criterios</h2>
+    <p class="sub">Asigna la importancia de cada criterio (números mayores = más importante). No necesitan sumar 1, el sistema los ajusta automáticamente.</p>
+
+    <div class="weights-grid">
+      <div class="weight-field">
+        <label for="w0">Precio mensual</label>
+        <input type="number" id="w0" min="0" step="0.05" value="0.25">
+      </div>
+      <div class="weight-field">
+        <label for="w3">Disponibilidad offline</label>
+        <input type="number" id="w3" min="0" step="0.05" value="0.15">
+      </div>
+      <div class="weight-field">
+        <label for="w1">Catálogo</label>
+        <input type="number" id="w1" min="0" step="0.05" value="0.20">
+      </div>
+      <div class="weight-field">
+        <label for="w4">Recomendaciones personalizadas</label>
+        <input type="number" id="w4" min="0" step="0.05" value="0.15">
+      </div>
+      <div class="weight-field">
+        <label for="w2">Calidad de audio</label>
+        <input type="number" id="w2" min="0" step="0.05" value="0.15">
+      </div>
+      <div class="weight-field">
+        <label for="w5">Compatibilidad multiplataforma</label>
+        <input type="number" id="w5" min="0" step="0.05" value="0.10">
+      </div>
+    </div>
+
+    <div class="run-row">
+      <label class="invert-toggle">
+        <input type="checkbox" id="invert">
+        Orden inverso (peor a mejor)
+      </label>
+      <button class="run-btn" id="runBtn">
+        <svg viewBox="0 0 12 12" fill="currentColor"><path d="M1 0.5 L11 6 L1 11.5 Z"/></svg>
+        Ejecutar
+      </button>
+    </div>
+    <p class="hint" id="statusHint">Aún no se han aplicado pesos — los productos se muestran sin calificación.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Producto recomendado</h2>
+    <p class="sub" id="tableSub">Todas las alternativas evaluadas con sus características.</p>
+    <table>
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+// ---- Datos base (Tarea 3) ----
+const CRIT_KEYS = ["precio","catalogo","audio","offline","recom","compat"];
+const COST_CRITERIA = ["precio"]; // menor es mejor
+
+const PRODUCTS = [
+  { name:"Spotify",                 color:"#1DB954", precio:10.99, catalogo:100, audio:7,  offline:9, recom:10, compat:10 },
+  { name:"Apple Music",             color:"#FA2D6E", precio:10.99, catalogo:100, audio:9,  offline:8, recom:7,  compat:8  },
+  { name:"YouTube Music",           color:"#FF0033", precio:9.99,  catalogo:100, audio:6,  offline:7, recom:7,  compat:9  },
+  { name:"Amazon Music Unlimited",  color:"#00A8E1", precio:9.99,  catalogo:100, audio:8,  offline:8, recom:7,  compat:8  },
+  { name:"Tidal",                   color:"#000000", precio:10.99, catalogo:90,  audio:10, offline:8, recom:6,  compat:6  },
+  { name:"Deezer",                  color:"#A238FF", precio:10.99, catalogo:90,  audio:8,  offline:8, recom:8,  compat:7  },
+  { name:"Pandora",                 color:"#3668FF", precio:9.99,  catalogo:60,  audio:6,  offline:6, recom:8,  compat:5  },
+  { name:"SoundCloud",              color:"#FF5500", precio:9.99,  catalogo:40,  audio:6,  offline:7, recom:7,  compat:8  },
+];
+
+const LABELS = {
+  precio:"Precio", catalogo:"Catálogo", audio:"Audio",
+  offline:"Offline", recom:"Recom.", compat:"Compat."
+};
+const FULL_LABELS = {
+  precio:"Precio mensual (USD)", catalogo:"Catálogo (M canciones)", audio:"Calidad de audio (1-10)",
+  offline:"Disponibilidad offline (1-10)", recom:"Recomendaciones (1-10)", compat:"Compatibilidad (1-10)"
+};
+
+function initials(name){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase(); }
+
+function getWeights(){
+  const raw = CRIT_KEYS.map((k, idx) => parseFloat(document.getElementById("w" + idx).value) || 0);
+  const sum = raw.reduce((a,b)=>a+b, 0) || 1;
+  return raw.map(w => w / sum);
+}
+
+function critByWeightOrder(weights){
+  return CRIT_KEYS.map((key, j) => ({ key, w: weights[j] })).sort((a,b) => b.w - a.w).map(c => c.key);
+}
+
+// ---------- SAW ----------
+function computeSAW(weights){
+  const norm = PRODUCTS.map(() => ({}));
+  CRIT_KEYS.forEach((key, j) => {
+    const values = PRODUCTS.map(p => p[key]);
+    const max = Math.max(...values), min = Math.min(...values);
+    PRODUCTS.forEach((p, i) => {
+      norm[i][key] = COST_CRITERIA.includes(key) ? (min / p[key]) : (p[key] / max);
+    });
+  });
+  const order = critByWeightOrder(weights);
+  const scored = PRODUCTS.map((p, i) => ({
+    ...p,
+    _sawScore: CRIT_KEYS.reduce((acc, key, j) => acc + norm[i][key] * weights[j], 0),
+    _sawNorm: norm[i],
+  }));
+  scored.sort((a, b) => {
+    const diff = b._sawScore - a._sawScore;
+    if (Math.abs(diff) > 1e-9) return diff;
+    for (const key of order) {
+      const d = b._sawNorm[key] - a._sawNorm[key];
+      if (Math.abs(d) > 1e-9) return d;
+    }
+    return 0;
+  });
+  scored.forEach((p, i) => {
+    if (i === 0) { p._sawPos = 1; return; }
+    const prev = scored[i-1];
+    const same = Math.abs(prev._sawScore - p._sawScore) < 1e-9 &&
+                 CRIT_KEYS.every(key => Math.abs(prev._sawNorm[key] - p._sawNorm[key]) < 1e-9);
+    p._sawPos = same ? prev._sawPos : i + 1;
+  });
+  return scored;
+}
+
+// ---------- TOPSIS ----------
+function computeTOPSIS(weights){
+  // normalización vectorial
+  const norm = PRODUCTS.map(() => ({}));
+  CRIT_KEYS.forEach((key) => {
+    const values = PRODUCTS.map(p => p[key]);
+    const denom = Math.sqrt(values.reduce((s, v) => s + v * v, 0)) || 1;
+    PRODUCTS.forEach((p, i) => { norm[i][key] = p[key] / denom; });
+  });
+  // matriz ponderada
+  const weighted = PRODUCTS.map((_, i) => {
+    const row = {};
+    CRIT_KEYS.forEach((key, j) => { row[key] = norm[i][key] * weights[j]; });
+    return row;
+  });
+  // solución ideal positiva / negativa
+  const idealPos = {}, idealNeg = {};
+  CRIT_KEYS.forEach((key) => {
+    const col = weighted.map(r => r[key]);
+    if (COST_CRITERIA.includes(key)) {
+      idealPos[key] = Math.min(...col);
+      idealNeg[key] = Math.max(...col);
+    } else {
+      idealPos[key] = Math.max(...col);
+      idealNeg[key] = Math.min(...col);
+    }
+  });
+  // distancias y cercanía relativa
+  const order = critByWeightOrder(weights);
+  const scored = PRODUCTS.map((p, i) => {
+    let sPlus = 0, sMinus = 0;
+    CRIT_KEYS.forEach((key) => {
+      sPlus += (weighted[i][key] - idealPos[key]) ** 2;
+      sMinus += (weighted[i][key] - idealNeg[key]) ** 2;
+    });
+    sPlus = Math.sqrt(sPlus); sMinus = Math.sqrt(sMinus);
+    const c = (sPlus + sMinus) === 0 ? 0 : sMinus / (sPlus + sMinus);
+    return { ...p, _topsisScore: c, _topsisNorm: norm[i] };
+  });
+  scored.sort((a, b) => {
+    const diff = b._topsisScore - a._topsisScore;
+    if (Math.abs(diff) > 1e-9) return diff;
+    for (const key of order) {
+      const d = b._topsisNorm[key] - a._topsisNorm[key];
+      if (Math.abs(d) > 1e-9) return d;
+    }
+    return 0;
+  });
+  scored.forEach((p, i) => {
+    if (i === 0) { p._topsisPos = 1; return; }
+    const prev = scored[i-1];
+    const same = Math.abs(prev._topsisScore - p._topsisScore) < 1e-9 &&
+                 CRIT_KEYS.every(key => Math.abs(prev._topsisNorm[key] - p._topsisNorm[key]) < 1e-9);
+    p._topsisPos = same ? prev._topsisPos : i + 1;
+  });
+  return scored;
+}
+
+// ---------- Render ----------
+function critCells(p){
+  return CRIT_KEYS.map(key => {
+    const val = key === "precio" ? `$${p[key].toFixed(2)}` : (key === "catalogo" ? `${p[key]}M` : p[key]);
+    return `<td class="num" data-label="${FULL_LABELS[key]}">${val}</td>`;
+  }).join("");
+}
+
+function critHeaderCells(){
+  return CRIT_KEYS.map(key => `<th class="num" title="${FULL_LABELS[key]}">${LABELS[key]}</th>`).join("");
+}
+
+function renderInitialState(){
+  document.getElementById("thead").innerHTML = `
+    <tr>
+      <th class="num">#</th>
+      <th>Producto</th>
+      ${critHeaderCells()}
+      <th class="num">Calificación</th>
+    </tr>`;
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  PRODUCTS.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="num" data-label="#"><span class="pos-badge">–</span></td>
+      <td data-label="Producto">
+        <div class="product-cell">
+          <div class="logo" style="background:${p.color}">${initials(p.name)}</div>
+          <span class="product-name">${p.name}</span>
+        </div>
+      </td>
+      ${critCells(p)}
+      <td class="num" data-label="Calificación"><span class="score dim">—</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderSingle(rows, scoreKey, posKey, cssClass, label){
+  document.getElementById("thead").innerHTML = `
+    <tr>
+      <th class="num">#</th>
+      <th>Producto</th>
+      ${critHeaderCells()}
+      <th class="num">Calificación (${label})</th>
+    </tr>`;
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  rows.forEach(p => {
+    const tr = document.createElement("tr");
+    if (p[posKey] === 1) tr.classList.add("top1");
+    tr.innerHTML = `
+      <td class="num" data-label="#"><span class="pos-badge">${p[posKey]}</span></td>
+      <td data-label="Producto">
+        <div class="product-cell">
+          <div class="logo" style="background:${p.color}">${initials(p.name)}</div>
+          <span class="product-name">${p.name}</span>
+        </div>
+      </td>
+      ${critCells(p)}
+      <td class="num" data-label="Calificación"><span class="score ${cssClass}">${p[scoreKey].toFixed(4)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderBoth(rows){
+  document.getElementById("thead").innerHTML = `
+    <tr>
+      <th>Producto</th>
+      ${critHeaderCells()}
+      <th class="num group-saw">Pos. SAW</th>
+      <th class="num group-saw">Calif. SAW</th>
+      <th class="num group-topsis">Pos. TOPSIS</th>
+      <th class="num group-topsis">Calif. TOPSIS</th>
+    </tr>`;
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  rows.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td data-label="Producto">
+        <div class="product-cell">
+          <div class="logo" style="background:${p.color}">${initials(p.name)}</div>
+          <span class="product-name">${p.name}</span>
+        </div>
+      </td>
+      ${critCells(p)}
+      <td class="num" data-label="Posición SAW"><span class="pos-badge">${p._sawPos}</span></td>
+      <td class="num" data-label="Calificación SAW"><span class="score">${p._sawScore.toFixed(4)}</span></td>
+      <td class="num" data-label="Posición TOPSIS"><span class="pos-badge">${p._topsisPos}</span></td>
+      <td class="num" data-label="Calificación TOPSIS"><span class="score topsis">${p._topsisScore.toFixed(4)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Selector de método ----------
+document.querySelectorAll(".method-option").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll(".method-option").forEach(o => o.classList.remove("active"));
+    el.classList.add("active");
+    el.querySelector("input").checked = true;
+  });
+});
+function getMethod(){
+  return document.querySelector('input[name="method"]:checked').value;
+}
+
+renderInitialState();
+
+document.getElementById("runBtn").addEventListener("click", () => {
+  const weights = getWeights();
+  const method = getMethod();
+  const invert = document.getElementById("invert").checked;
+  const hint = document.getElementById("statusHint");
+  const sub = document.getElementById("tableSub");
+
+  if (method === "saw") {
+    let rows = computeSAW(weights);
+    if (invert) rows = [...rows].reverse();
+    renderSingle(rows, "_sawScore", "_sawPos", "", "SAW");
+    sub.textContent = "Ordenado por el método SAW (Simple Additive Weighting).";
+    hint.textContent = "Pesos aplicados — método SAW" + (invert ? " (orden inverso)." : ".");
+  } else if (method === "topsis") {
+    let rows = computeTOPSIS(weights);
+    if (invert) rows = [...rows].reverse();
+    renderSingle(rows, "_topsisScore", "_topsisPos", "topsis", "TOPSIS");
+    sub.textContent = "Ordenado por el método TOPSIS (cercanía relativa a la solución ideal).";
+    hint.textContent = "Pesos aplicados — método TOPSIS" + (invert ? " (orden inverso)." : ".");
+  } else {
+    const sawRows = computeSAW(weights);
+    const topsisRows = computeTOPSIS(weights);
+    // combinar resultados de ambos métodos en cada producto
+    const combined = PRODUCTS.map(p => {
+      const s = sawRows.find(r => r.name === p.name);
+      const t = topsisRows.find(r => r.name === p.name);
+      return { ...p, _sawScore: s._sawScore, _sawPos: s._sawPos, _topsisScore: t._topsisScore, _topsisPos: t._topsisPos };
+    });
+    combined.sort((a, b) => a._sawPos - b._sawPos);
+    if (invert) combined.reverse();
+    renderBoth(combined);
+    sub.textContent = "Comparativa: resultados de SAW y TOPSIS lado a lado (ordenado por posición SAW).";
+    hint.textContent = "Pesos aplicados — comparando SAW y TOPSIS" + (invert ? " (orden inverso)." : ".");
+  }
+});
+</script>
+</body>
+</html>
