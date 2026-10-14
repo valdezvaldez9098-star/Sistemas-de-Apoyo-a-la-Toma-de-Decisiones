@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regresión lineal por Mínimos Cuadrados</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Regresión lineal por Mínimos Cuadrados</h1>
+  <nav>
+    <button data-view="dashboard" class="active">Dashboard</button>
+    <button data-view="procedimiento">Procedimiento</button>
+    <button data-view="equipo">Equipo</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="view">
+    <div class="kpis">
+      <div class="card"><span>Modelo</span><strong id="modelo">–</strong></div>
+      <div class="card"><span>RMSE</span><strong id="rmse">–</strong></div>
+      <div class="card"><span>MAE</span><strong id="mae">–</strong></div>
+      <div class="card"><span>MAPE</span><strong id="mape">–</strong></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Datos</h2>
+        <table>
+          <thead><tr><th>x</th><th>y</th><th></th></tr></thead>
+          <tbody id="filas"></tbody>
+        </table>
+        <button id="agregar">Agregar fila</button>
+      </div>
+
+      <div class="card">
+        <h2>Datos y recta de tendencia</h2>
+        <canvas id="grafica"></canvas>
+        <div class="predecir">
+          <label>Valor de x <input type="number" id="xPred" step="any"></label>
+          <strong id="yPred">y = –</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Variable x</h2>
+        <canvas id="graficaX"></canvas>
+        <dl>
+          <dt>Media</dt><dd id="mediaX"></dd>
+          <dt>Desviación estándar</dt><dd id="desvX"></dd>
+          <dt>Varianza</dt><dd id="varX"></dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h2>Variable y</h2>
+        <canvas id="graficaY"></canvas>
+        <dl>
+          <dt>Media</dt><dd id="mediaY"></dd>
+          <dt>Desviación estándar</dt><dd id="desvY"></dd>
+          <dt>Varianza</dt><dd id="varY"></dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- Procedimiento (se llena desde script.js) -->
+  <section id="procedimiento" class="view" hidden>
+    <div class="card" id="pasos"></div>
+  </section>
+
+  <!-- Integrantes del equipo -->
+  <section id="equipo" class="view" hidden>
+    <div class="card">
+      <h2>Integrantes (Equipo 11)</h2>
+      <ul>
+        <li>Gálvez Arredondo Marco Gerardo</li>
+        <li>García Valdez José Aldair</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
