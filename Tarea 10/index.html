@@ -4,57 +4,65 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clasificador Bayes Ingenuo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<section class="panel">
+<aside class="panel">
   <h1>Clasificador Bayes Ingenuo</h1>
 
-  <label>Cargar dataset (CSV): <input type="file" id="dataset" accept=".csv,.txt"></label>
+  <label>Dataset (CSV)
+    <input type="file" id="dataset" accept=".csv,.txt">
+  </label>
 
   <fieldset>
     <legend>Pruebas</legend>
-    <div class="grupo">
-      <strong>Mismo dataset</strong>
-      <label class="op"><input type="radio" name="metodo" value="simple" checked> Validación simple</label>
-      <label class="op"><input type="radio" name="metodo" value="estratificada"> Selección aleatoria estratificada</label>
-      <label class="op sub">Porcentaje de entrenamiento: <input type="number" id="pct" value="70" min="1" max="99"> %</label>
-      <label class="op"><input type="radio" name="metodo" value="cruzada"> Validación cruzada (50%-50%)</label>
-    </div>
-    <div class="grupo">
-      <label class="op"><input type="radio" name="metodo" value="externo"> Archivo de pruebas externo</label>
-      <input type="file" id="externo" accept=".csv,.txt">
-    </div>
+    <p class="grupo">Mismo dataset</p>
+    <label class="op"><input type="radio" name="metodo" value="simple" checked> Validación simple</label>
+    <label class="op"><input type="radio" name="metodo" value="estratificada"> Selección aleatoria estratificada</label>
+    <label class="porcentaje">Porcentaje de entrenamiento <input type="number" id="pct" value="70" min="1" max="99"> %</label>
+    <label class="op"><input type="radio" name="metodo" value="cruzada"> Validación cruzada (50%-50%)</label>
+    <p class="grupo">Otro conjunto</p>
+    <label class="op"><input type="radio" name="metodo" value="externo"> Archivo de pruebas externo</label>
+    <input type="file" id="externo" accept=".csv,.txt">
   </fieldset>
 
-  <label>Variables continuas:
+  <label>Variables continuas
     <select id="continuo">
       <option value="densidad">Función de densidad (normal)</option>
       <option value="anchos">Intervalos de anchos iguales</option>
       <option value="frecuencias">Intervalos de frecuencias iguales</option>
     </select>
   </label>
-  <label>Intervalo de discretización (número de intervalos): <input type="number" id="intervalos" value="5" min="2"></label>
+  <label>Intervalo de discretización (número de intervalos)
+    <input type="number" id="intervalos" value="5" min="2">
+  </label>
 
-  <button id="analizar">Análisis</button>
+  <button id="analizar">Ejecutar análisis</button>
+</aside>
+
+<main>
   <div id="errores"></div>
-</section>
+  <section id="resultados" hidden>
+    <p id="info"></p>
 
-<section class="panel" id="resultados" hidden>
-  <h1>Clasificador Bayes Ingenuo</h1>
-  <p id="info"></p>
+    <div id="evaluacion">
+      <h2>Matriz de confusión</h2>
+      <p class="nota">Filas: clase predicha. Columnas: clase real. Verde: aciertos. Rojo: errores.</p>
+      <div class="tabla" id="matriz"></div>
 
-  <div id="evaluacion">
-    <h2>Matriz de confusión</h2>
-    <div class="tabla" id="matriz"></div>
-    <h2>Métricas de evaluación</h2>
-    <div class="tabla" id="metricas"></div>
-    <h2>Accuracy: <span id="accuracy"></span></h2>
-  </div>
+      <h2>Métricas de evaluación</h2>
+      <div class="tabla" id="metricas"></div>
+      <p class="accuracy">Accuracy <strong id="accuracy"></strong></p>
+    </div>
 
-  <div id="predicciones"></div>
-</section>
+    <div id="predicciones"></div>
+  </section>
+  <p class="vacio">Carga un dataset y ejecuta el análisis. Aquí aparecerán la matriz de confusión y las métricas.</p>
+</main>
 
 <script src="validacion.js"></script>
 <script src="clasificador.js"></script>

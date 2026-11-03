@@ -12,8 +12,10 @@ const tabla = (cab, filas) =>
 // Filas: clase predicha. Columnas: clase real.
 function tablaMatriz(matriz, clases) {
   const totales = clases.map((_, j) => suma(matriz.map(f => f[j])));
+  const max = Math.max(...matriz.flat(), 1);
+  const celda = (v, i, j) => `<td class="${i === j ? 'ok' : 'err'}" style="--v:${v / max}">${v}</td>`;
   const filas = matriz.map((f, i) =>
-    `<tr><th>${esc(clases[i])}</th>${f.map((v, j) => `<td class="${i === j ? 'diag' : ''}">${v}</td>`).join('')}<td>${suma(f)}</td></tr>`);
+    `<tr><th>${esc(clases[i])}</th>${f.map((v, j) => celda(v, i, j)).join('')}<td>${suma(f)}</td></tr>`);
   return `<table><tr><th>Predicha \\ Real</th>${clases.map(c => `<th>${esc(c)}</th>`).join('')}<th>Total</th></tr>` +
     filas.join('') + `<tr><th>Total</th>${totales.map(v => `<td>${v}</td>`).join('')}<td>${suma(totales)}</td></tr></table>`;
 }
